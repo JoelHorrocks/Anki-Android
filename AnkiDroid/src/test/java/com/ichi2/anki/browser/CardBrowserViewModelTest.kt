@@ -54,6 +54,7 @@ import com.ichi2.anki.browser.CardBrowserViewModel.ChangeMultiSelectMode.SingleS
 import com.ichi2.anki.browser.CardBrowserViewModel.ChangeNoteTypeResponse
 import com.ichi2.anki.browser.CardBrowserViewModel.Companion.STATE_MULTISELECT_VALUES
 import com.ichi2.anki.browser.CardBrowserViewModel.RowSelection
+import com.ichi2.anki.browser.CardBrowserViewModel.SearchState
 import com.ichi2.anki.browser.CardBrowserViewModel.ToggleSelectionState.SELECT_ALL
 import com.ichi2.anki.browser.CardBrowserViewModel.ToggleSelectionState.SELECT_NONE
 import com.ichi2.anki.browser.RepositionCardsRequest.NoRepositionableCardsError
@@ -1454,6 +1455,49 @@ class CardBrowserViewModelTest : JvmTest() {
         }
     }
 
+    @Test
+    fun `invalid search query emits an error`() {
+        runViewModelTest {
+            flowOfSearchState.test {
+                updateQueryText("and")
+                launchSearchForCards(tempSearchQuery!!)
+
+                assertThat(expectMostRecentItem(), instanceOf(SearchState.Error::class.java))
+            }
+        }
+    }
+
+    @Test
+    fun `card id is scrolled to in cards mode`() {
+        runTest {
+            val cardId = addBasicNote().firstCard().id
+
+            runViewModelTest(options = CardBrowserLaunchOptions.ScrollToCard(cardId)) {
+                flowOfScrollRequest.test {
+                    launchSearchForCards()
+                    assertThat(expectMostRecentItem().rowId, equalTo(CardOrNoteId(cardId)))
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `card id is scrolled to in notes mode`() {
+        runTest {
+            val note = addBasicAndReversedNote()
+            val noteId = note.id
+            val cardId = note.firstCard().id
+
+            runViewModelNotesTest(options = CardBrowserLaunchOptions.ScrollToCard(cardId)) {
+                flowOfScrollRequest.test {
+                    launchSearchForCards()
+                    assertThat(expectMostRecentItem().rowId, equalTo(CardOrNoteId(noteId)))
+                }
+            }
+        }
+    }
+
+
     private fun assertDate(str: String?) {
         // 2025-01-09 @ 18:06
         assertNotNull(str)
@@ -1470,6 +1514,7 @@ class CardBrowserViewModelTest : JvmTest() {
 
     private fun runViewModelNotesTest(
         notes: Int = 0,
+        options: CardBrowserLaunchOptions? = null,
         manualInit: Boolean = true,
         testBody: suspend CardBrowserViewModel.() -> Unit,
     ) = runTest {
@@ -1482,7 +1527,7 @@ class CardBrowserViewModelTest : JvmTest() {
             CardBrowserViewModel(
                 lastDeckIdRepository = SharedPreferencesLastDeckIdRepository(),
                 cacheDir = createTransientDirectory(),
-                options = null,
+                options = options,
                 preferences = AnkiDroidApp.sharedPreferencesProvider,
                 isFragmented = false,
                 manualInit = manualInit,
@@ -1497,6 +1542,7 @@ class CardBrowserViewModelTest : JvmTest() {
 
     private fun runViewModelTest(
         notes: Int = 0,
+        options: CardBrowserLaunchOptions? = null,
         manualInit: Boolean = true,
         savedStateHandle: SavedStateHandle = SavedStateHandle(),
         testBody: suspend CardBrowserViewModel.() -> Unit,
@@ -1509,7 +1555,7 @@ class CardBrowserViewModelTest : JvmTest() {
             CardBrowserViewModel(
                 lastDeckIdRepository = SharedPreferencesLastDeckIdRepository(),
                 cacheDir = createTransientDirectory(),
-                options = null,
+                options = options,
                 preferences = AnkiDroidApp.sharedPreferencesProvider,
                 isFragmented = false,
                 manualInit = manualInit,

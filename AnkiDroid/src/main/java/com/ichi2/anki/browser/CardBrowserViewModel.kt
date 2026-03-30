@@ -1238,8 +1238,6 @@ class CardBrowserViewModel(
      *
      * @see com.ichi2.anki.searchForRows
      */
-    @NeedsTest("Invalid searches are handled. For instance: 'and'")
-    @NeedsTest("card id is scrolled")
     fun launchSearchForCards(cardOrNoteIdsToSelect: List<CardOrNoteId> = emptyList()) {
         if (!initCompleted) return
 
