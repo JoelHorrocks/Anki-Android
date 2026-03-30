@@ -1497,7 +1497,6 @@ class CardBrowserViewModelTest : JvmTest() {
         }
     }
 
-
     private fun assertDate(str: String?) {
         // 2025-01-09 @ 18:06
         assertNotNull(str)
